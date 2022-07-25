@@ -1,6 +1,6 @@
 const { Type } = require('../models/models');
 const ApiError = require('../error/ApiError');
-const { unlink }  = require('node:fs/promises');
+const { unlink } = require('node:fs/promises');
 const uuid = require('uuid');
 const path = require('path');
 
@@ -11,8 +11,8 @@ class TypeController {
         const { img } = req.files;
         let fileName = uuid.v4() + '.jpg';
         img.mv(path.resolve(__dirname, '..', 'static', fileName));
-
         const type = await Type.create({ name, img: fileName });
+
         return res.json(type);
     };
 
@@ -21,7 +21,7 @@ class TypeController {
         return res.json(types);
     };
 
-    async patchType (req, res) {
+    async patchType(req, res) {
         const { id, name } = req.body;
         let type;
 
@@ -55,6 +55,7 @@ class TypeController {
 
             return res.json({ newType });
         }
+
         // Only 'Image' changing
         if (req.files?.img && !name) {
             if (type.img) {
