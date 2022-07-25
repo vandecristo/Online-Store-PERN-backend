@@ -16,12 +16,10 @@ class UserController {
     async registration(req, res, next) {
         const { email, password, role } = req.body;
         if (!email || !password) {
-            
             return next(ApiError.badRequest('Email or Password is incorrect'));
         }
         const alreadyExistingUser = await User.findOne({ where: { email }});
         if (alreadyExistingUser) {
-            
             return next(ApiError.badRequest('User with this email already exists'));
         }
         const hashPassowrd = await bcrypt.hash(password, 5);
@@ -34,15 +32,17 @@ class UserController {
     
     async login(req, res, next) {
         const { email, password } = req.body;
+
+        if (!email && !password) {
+            return res.json({ message: 'Data is invalid' });
+        }
         const user = await User.findOne({ where: { email }});
         if (!user) {
-            
             return next(ApiError.badRequest('User with this email not found'));
         }
 
         let comparePassword = bcrypt.compareSync(password, user.password);
         if (!comparePassword) {
-            
             return next(ApiError.badRequest('Wrong email or password'));
         }
         const token = generateJwt(user.id, user.email, user.role);
@@ -57,4 +57,4 @@ class UserController {
     };
 }
 
-module.exports = new UserController();
+module.exports = new UserController;
