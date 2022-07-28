@@ -5,7 +5,6 @@ const uuid = require('uuid');
 const path = require('path');
 
 class BrandController {
-    
     async createBrand(req, res) {
         const { name } = req.body;
         const { img } = req.files;
@@ -29,7 +28,7 @@ class BrandController {
         try {
             brand = await Brand.findOne({ where: { id }});
         } catch (e) {
-            return res.json({ message: 'Invalid Id' });
+            return res.json({ message: 'Invalid id' });
         }
 
         // No params
@@ -67,6 +66,21 @@ class BrandController {
 
             return res.json({ updatedBrand });
         }
+    };
+
+    async deleteBrand (req, res) {
+        const { id } = req.params;
+        const deletableBrand = await Brand.findOne({ where: { id }});
+
+        if (deletableBrand) {
+            await Brand.destroy({ where: { id }});
+        }
+        if (deletableBrand?.img) {
+            await unlink(`/Users/user/main/OS/server/static/${deletableBrand.img}`);
+        }
+        const brands = await Brand.findAll( { order: [['id', 'ASC']]});
+
+        return res.json(brands);
     };
 }
 

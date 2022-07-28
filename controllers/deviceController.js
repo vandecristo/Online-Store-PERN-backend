@@ -1,10 +1,10 @@
 const { Device, DeviceInfo } = require('../models/models');
 const ApiError = require('../error/ApiError');
+const { unlink } = require('node:fs/promises');
 const uuid = require('uuid');
 const path = require('path');
 
 class DeviceController {
-
     async createDevice(req, res, next) {
         try {
             let { name, price, brandId, typeId, info } = req.body;
@@ -59,7 +59,6 @@ class DeviceController {
 
     async getDeviceById(req, res){ 
         const { id } = req.params;
-
         const device = await Device.findOne(
             {
                 where: { id },
@@ -70,25 +69,20 @@ class DeviceController {
         return res.json(device);
     }
 
-    async deleteDevice(req, res){ 
-        const { id } = req.query;
-       const device = await Device.findAll({
-            where: { id }
-        })
+    async deleteDevice(req, res){
+        const { id } = req.params;
+        const deletableDevice = await Device.findOne({ where: { id }});
 
-        const delitionDate = + Date.now();
+        if (deletableDevice) {
+            await Device.destroy({ where: { id }});
+        }
+        if (deletableDevice?.img) {
+            await unlink(`/Users/user/main/OS/server/static/${deletableDevice.img}`);
+        }
+        const devices = await Device.findAll( { order: [['id', 'ASC']]});
 
-        if (device[0]) {
-            const deletableDevice = Device.update(
-                { deletedAt: delitionDate },
-                { where: { id }}
-            )
-            return res.json({ message: 'Device has been succesfully deleted.' })
-        } else {
-            return res.json({ message: "Device with this Id not found or already been deleted." })
-        }      
-    }
-
+        return res.json(devices);
+    };
 }
 
 module.exports = new DeviceController;

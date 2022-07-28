@@ -5,7 +5,6 @@ const uuid = require('uuid');
 const path = require('path');
 
 class TypeController {
-
     async createType(req, res) {
         const { name } = req.body;
         const { img } = req.files;
@@ -68,6 +67,21 @@ class TypeController {
             return res.json({ newType });
         }
     };
+
+    async deleteType(req, res) {
+        const { id } = req.params;
+        const deletableType = await Type.findOne({ where: { id }});
+
+        if (deletableType) {
+            await Type.destroy({ where: { id }});
+        }
+        if (deletableType?.img) {
+            await unlink(`/Users/user/main/OS/server/static/${deletableType.img}`);
+        }
+        const types = await Type.findAll( { order: [['id', 'ASC']]});
+
+        return res.json(types);
+    };
 }
 
-module.exports = new TypeController
+module.exports = new TypeController;
