@@ -31,7 +31,7 @@ class DeviceController {
         }
     }
 
-    async getAllDevices(req, res){
+    async getAllDevices(req, res) {
         let  { typeId, brandId, limit, page } = req.query;
         page = page || 1;
         limit = limit || 10;
@@ -43,21 +43,18 @@ class DeviceController {
         }
         if (!typeId && brandId) {
             devices = await Device.findAndCountAll({ where: { deletedAt: null, brandId }, limit, offset });
-        
         }
         if (typeId && !brandId) {
             devices = await Device.findAndCountAll({ where: { deletedAt: null, typeId }, limit, offset});
-            
         }
         if (typeId && brandId) {
             devices = await Device.findAndCountAll({ where: { deletedAt: null, brandId, typeId }, limit, offset});
-            
         }
 
         return res.json(devices);
     }
 
-    async getDeviceById(req, res){ 
+    async getDeviceById(req, res) {
         const { id } = req.params;
         const device = await Device.findOne(
             {
@@ -69,7 +66,7 @@ class DeviceController {
         return res.json(device);
     }
 
-    async deleteDevice(req, res){
+    async deleteDevice(req, res) {
         const { id } = req.params;
         const deletableDevice = await Device.findOne({ where: { id }});
 
@@ -83,6 +80,61 @@ class DeviceController {
 
         return res.json(devices);
     };
+
+    async patchDevice(req, res) {
+        const { id, name } = req.body;
+        const img = !!req.files?.img;
+
+        let device;
+        // If we didn't get a valid ID, so we catch it
+        try {
+            device = await Device.findOne({ where: { id }});
+        } catch (e) {
+            return res.json({ message: 'Invalid id' });
+        }
+        // No params
+        if (!img && !name) {
+            return res.json({ message: 'Invalid params' });
+        }
+
+        // Only 'Name' changing
+        if (name && !img) {
+            if (name !== device.name) {
+                Device.update({ name }, { where: { id }});
+            }
+        }
+
+        // 'Name' and 'Image' changing
+        if (name && img) {
+            if (device.img) {
+                try {
+                    await unlink(`/Users/user/main/OS/server/static/${device.img}`);
+                } catch (e) {}
+            }
+            const fileName = uuid.v4() + '.jpg';
+            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+            if (name !== device.name) {
+                Device.update({ img: fileName, name }, { where: { id }});;
+            } else {
+                Device.update({ img: fileName }, { where: { id }});
+            }
+        }
+
+        // Only 'Image' changing
+        if (req.files?.img && !name) {
+            if (device.img) {
+                try {
+                    await unlink(`/Users/user/main/OS/server/static/${device.img}`);
+                } catch (e) {}
+            }
+            const fileName = uuid.v4() + '.jpg';
+            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+            await Device.update({ img: fileName }, { where: { id }});
+        }
+        const devices = await Device.findAll( { order: [['id', 'ASC']]});
+
+        return res.json(devices);
+    }
 }
 
 module.exports = new DeviceController;
