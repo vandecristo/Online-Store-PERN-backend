@@ -17,55 +17,63 @@ class TypeController {
 
     async getAllTypes(req, res){
         const types = await Type.findAll( { order: [['id', 'ASC']]});
+
         return res.json(types);
     };
 
     async patchType(req, res) {
         const { id, name } = req.body;
-        let type;
+        const img = !!req.files?.img;
 
+        let type;
         // If we didn't get a valid ID, so we catch it
         try {
             type = await Type.findOne({ where: { id }});
         } catch (e) {
-            return res.json({ message: 'Invalid Id' });
+            return res.json({ message: 'Invalid id' });
         }
-
         // No params
-        if (!req.files?.img && !name) {
+        if (!img && !name) {
             return res.json({ message: 'Invalid params' });
         }
 
         // Only 'Name' changing
-        if (name !== type.name && name && !req.files?.img) {
-            const newType = await Type.update({ name }, { where: { id }});
-
-            return res.json({ newType });
+        if (name && !img) {
+            if (name !== type.name) {
+                await Type.update({ name }, { where: { id }});
+            }
         }
 
         // 'Name' and 'Image' changing
-        if (name !== type.name && name && req.files?.img) {
+        if (name && img) {
             if (type.img) {
-                await unlink(`/Users/user/main/OS/server/static/${type.img}`);
+                try {
+                    await unlink(`/Users/user/main/OS/server/static/${type.img}`);
+                } catch (e) {}
             }
             const fileName = uuid.v4() + '.jpg';
             req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            const newType = await Type.update({ img: fileName, name }, { where: { id }});
-
-            return res.json({ newType });
+            if (name !== type.name) {
+                await Type.update({ img: fileName, name }, { where: { id }});
+            } else {
+                await Type.update({ img: fileName }, { where: { id }});
+            }
         }
 
         // Only 'Image' changing
         if (req.files?.img && !name) {
             if (type.img) {
-                await unlink(`/Users/user/main/OS/server/static/${type.img}`);
+                try {
+                    await unlink(`/Users/user/main/OS/server/static/${type.img}`);
+                    const fileName = uuid.v4() + '.jpg';
+                    req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+                    await Type.update({ img: fileName }, { where: { id }});
+                } catch (e) {}
             }
-            const fileName = uuid.v4() + '.jpg';
-            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            const newType = await Type.update({ img: fileName }, { where: { id }});
-
-            return res.json({ newType });
         }
+        const changedTypes = await Type.findAll( { order: [['id', 'ASC']]});
+
+        return res.json(changedTypes);
     };
 
     async deleteType(req, res) {
