@@ -25,14 +25,40 @@ class DeviceController {
                 });
             }
 
-            return res.json(device) 
+            const devices = await Device.findAll( { order: [['id', 'ASC']]});
+
+            return res.json(devices);
         } catch (e) {
             next(ApiError.badRequest(e.message));
         }
     }
 
+    async test(req, res) {
+        let { typeId, brandId, limit, page } = req.body;
+
+        if (!limit || !page) {
+            limit = 5;
+            page = 1;
+        }
+        let devices;
+        if (!typeId && !brandId) {
+            devices = await Device.findAndCountAll({ where: { deletedAt: null }, limit, offset: (page - 1) * limit, order: [['id', 'ASC']] });
+        }
+        if (!typeId && brandId) {
+            devices = await Device.findAndCountAll({ where: { deletedAt: null, brandId }, limit, offset: (page - 1) * limit, order: [['id', 'ASC']] });
+        }
+        if (typeId && !brandId) {
+            devices = await Device.findAndCountAll({ where: { deletedAt: null, typeId }, limit, offset: (page - 1) * limit, order: [['id', 'ASC']]});
+        }
+        if (typeId && brandId) {
+            devices = await Device.findAndCountAll({ where: { deletedAt: null, brandId, typeId }, limit, offset: (page - 1) * limit, order: [['id', 'ASC']]});
+        }
+
+        return res.json(devices);
+    }
+
     async getAllDevices(req, res) {
-        let  { typeId, brandId, limit, page } = req.query;
+        let  { typeId, brandId, limit, page } = req.body;
         page = page || 1;
         limit = limit || 10;
         let offset = page * limit - limit;
@@ -100,7 +126,7 @@ class DeviceController {
         // Only 'Name' changing
         if (name && !img) {
             if (name !== device.name) {
-                Device.update({ name }, { where: { id }});
+                await Device.update({ name }, { where: { id }});
             }
         }
 
@@ -114,9 +140,9 @@ class DeviceController {
             const fileName = uuid.v4() + '.jpg';
             req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
             if (name !== device.name) {
-                Device.update({ img: fileName, name }, { where: { id }});;
+                await Device.update({ img: fileName, name }, { where: { id }});;
             } else {
-                Device.update({ img: fileName }, { where: { id }});
+                await Device.update({ img: fileName }, { where: { id }});
             }
         }
 
@@ -125,11 +151,11 @@ class DeviceController {
             if (device.img) {
                 try {
                     await unlink(`/Users/user/main/OS/server/static/${device.img}`);
+                    const fileName = uuid.v4() + '.jpg';
+                    req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+                    await Device.update({ img: fileName }, { where: { id }});
                 } catch (e) {}
             }
-            const fileName = uuid.v4() + '.jpg';
-            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            await Device.update({ img: fileName }, { where: { id }});
         }
         const devices = await Device.findAll( { order: [['id', 'ASC']]});
 

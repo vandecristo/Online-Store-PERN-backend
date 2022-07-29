@@ -39,7 +39,7 @@ class TypeController {
         // Only 'Name' changing
         if (name && !img) {
             if (name !== type.name) {
-                Type.update({ name }, { where: { id }});
+                await Type.update({ name }, { where: { id }});
             }
         }
 
@@ -53,9 +53,9 @@ class TypeController {
             const fileName = uuid.v4() + '.jpg';
             req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
             if (name !== type.name) {
-                Type.update({ img: fileName, name }, { where: { id }});
+                await Type.update({ img: fileName, name }, { where: { id }});
             } else {
-                Type.update({ img: fileName }, { where: { id }});
+                await Type.update({ img: fileName }, { where: { id }});
             }
         }
 
@@ -64,15 +64,15 @@ class TypeController {
             if (type.img) {
                 try {
                     await unlink(`/Users/user/main/OS/server/static/${type.img}`);
+                    const fileName = uuid.v4() + '.jpg';
+                    req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+                    await Type.update({ img: fileName }, { where: { id }});
                 } catch (e) {}
             }
-            const fileName = uuid.v4() + '.jpg';
-            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            Type.update({ img: fileName }, { where: { id }});
         }
+        const changedTypes = await Type.findAll( { order: [['id', 'ASC']]});
 
-        const types = await Type.findAll( { order: [['id', 'ASC']]});
-        return res.json(types);
+        return res.json(changedTypes);
     };
 
     async deleteType(req, res) {

@@ -39,7 +39,7 @@ class BrandController {
         // Only 'Name' changing
         if (name && !img) {
             if (name !== brand.name) {
-                Brand.update({ name }, { where: { id }});
+                await Brand.update({ name }, { where: { id }});
             }
         }
 
@@ -53,9 +53,9 @@ class BrandController {
             const fileName = uuid.v4() + '.jpg';
             req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
             if (name !== brand.name) {
-                Brand.update({ img: fileName, name }, { where: { id }});
+                await Brand.update({ img: fileName, name }, { where: { id }});
             } else {
-                Brand.update({ img: fileName }, { where: { id }});
+                await Brand.update({ img: fileName }, { where: { id }});
             }
         }
 
@@ -64,15 +64,15 @@ class BrandController {
             if (brand.img) {
                 try {
                     await unlink(`/Users/user/main/OS/server/static/${brand.img}`);
+                    const fileName = uuid.v4() + '.jpg';
+                    req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
+                    await Brand.update({ img: fileName }, { where: { id }});
                 } catch (e) {}
             }
-            const fileName = uuid.v4() + '.jpg';
-            req.files.img.mv(path.resolve(__dirname, '..', 'static', fileName));
-            Brand.update({ img: fileName }, { where: { id }});
         }
+        const changedBrands = await Brand.findAll( { order: [['id', 'ASC']]});
 
-        const changedBrand = await Brand.findAll( { order: [['id', 'ASC']]});
-        return res.json(changedBrand);
+        return res.json(changedBrands);
     };
 
     async deleteBrand (req, res) {
