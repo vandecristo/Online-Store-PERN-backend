@@ -33,7 +33,7 @@ class DeviceController {
         }
     }
 
-    async test(req, res) {
+    async getDevicesWithFilter(req, res) {
         let { typeId, brandId, limit, page } = req.body;
 
         if (!limit || !page) {
